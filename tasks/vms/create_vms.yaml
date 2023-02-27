@@ -1,0 +1,97 @@
+- name: Create k3s-server vm
+  community.general.proxmox_kvm:
+    node: pve
+    name: "{{ hostvars[item]['dns_name'] }}"
+    newid: "{{ hostvars[item]['qemu_vm_id'] }}"
+    api_user: "{{ api_user }}"
+    api_password: "{{ hostvars['proxmox.home.apigban.com'].ansible_password }}"
+    api_host: "{{ hostvars['proxmox.home.apigban.com'].ansible_host }}"
+    clone: ubuntu-cloud
+    vmid: 999
+    sshkeys: "{{ lab_ssh_key }}"
+    storage: pve-part04-ssd
+    agent: true
+    ipconfig:
+      net0: "ip={{ hostvars[item]['eth0'] }}/24,gw=192.168.2.1"
+    nameservers:
+    - '1.1.1.1'
+    - '8.8.8.8'
+    timeout: 300
+  with_items: "{{ groups['k3s_server'] }}"
+
+- name: Create k3s-agents vm
+  community.general.proxmox_kvm:
+    node: pve
+    name: "{{ hostvars[item]['dns_name'] }}"
+    newid: "{{ hostvars[item]['qemu_vm_id'] }}"
+    api_user: "{{ api_user }}"
+    api_password: "{{ hostvars['proxmox.home.apigban.com'].ansible_password }}"
+    api_host: "{{ hostvars['proxmox.home.apigban.com'].ansible_host }}"
+    clone: ubuntu-cloud
+    vmid: 999
+    sshkeys: "{{ lab_ssh_key }}"
+    storage: pve-part04-ssd
+    agent: true
+    ipconfig:
+      net0: "ip={{ hostvars[item]['eth0'] }}/24,gw=192.168.2.1"
+    nameservers:
+    - '1.1.1.1'
+    - '8.8.8.8'
+    timeout: 300
+  with_items: "{{ groups['k3s_agent'] }}"
+
+- name: Apply tags to vms
+  community.general.proxmox_kvm:
+    node: pve
+    vmid: "{{ hostvars[item]['qemu_vm_id'] }}"
+    api_user: "{{ api_user }}"
+    api_password: "{{ hostvars['proxmox.home.apigban.com'].ansible_password }}"
+    api_host: "{{ hostvars['proxmox.home.apigban.com'].ansible_host }}"
+    tags: "{{hostvars[item]['tags']}}"
+    update: true
+  with_items: "{{groups['k3s']}}"
+
+- name: Start vms
+  community.general.proxmox_kvm:
+    node: pve
+    vmid: "{{ hostvars[item]['qemu_vm_id'] }}"
+    api_user: "{{ api_user }}"
+    api_password: "{{ hostvars['proxmox.home.apigban.com'].ansible_password }}"
+    api_host: "{{ hostvars['proxmox.home.apigban.com'].ansible_host }}"
+    update: true
+    state: started
+    force: true
+    timeout: 90
+  with_items: "{{groups['k3s']}}"
+
+- name: Set static ip addresses
+  community.general.proxmox_kvm:
+    node: pve
+    vmid: "{{ hostvars[item]['qemu_vm_id'] }}"
+    api_user: "{{ api_user }}"
+    api_password: "{{ hostvars['proxmox.home.apigban.com'].ansible_password }}"
+    api_host: "{{ hostvars['proxmox.home.apigban.com'].ansible_host }}"
+    update: true
+    ipconfig:
+      ipconfig0: "ip={{ hostvars[item]['eth0'] }}/24,gw=192.168.2.1"
+    nameservers:
+    - '1.1.1.1'
+    - '8.8.8.8'
+  with_items: "{{groups['k3s']}}"
+
+- name: Restart k3s vms
+  community.general.proxmox_kvm:
+    node: pve
+    vmid: "{{ hostvars[item]['qemu_vm_id'] }}"
+    api_user: "{{ api_user }}"
+    api_password: "{{ hostvars['proxmox.home.apigban.com'].ansible_password }}"
+    api_host: "{{ hostvars['proxmox.home.apigban.com'].ansible_host }}"
+    update: true
+    state: restarted
+    force: true
+    timeout: 90
+  with_items: "{{groups['k3s']}}"
+
+- name: Pause for 90s
+  ansible.builtin.pause:
+    seconds: 90

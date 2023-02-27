@@ -1,0 +1,40 @@
+- name: Copy ssh-key from controller to all instances
+  ansible.builtin.copy:
+    src: key/
+    dest: /home/apigban/.ssh
+    mode: '0600'
+    owner: "{{ansible_user}}"
+    group: "{{ansible_user}}"
+    mode: '0600'
+
+- name: Set authorized key taken from file
+  ansible.posix.authorized_key:
+    user: "{{ansible_user}}"
+    state: present
+    key: "{{ lookup('file', 'key/home.pub') }}"
+
+- name: Enable IPv4 forwarding
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: "1"
+    state: present
+    reload: yes
+
+- name: Enable IPv6 forwarding
+  sysctl:
+    name: net.ipv6.conf.all.forwarding
+    value: "1"
+    state: present
+    reload: yes
+  when: ansible_all_ipv6_addresses
+
+- name: disable swap
+  command: swapoff -a
+  changed_when: true
+  when: ansible_swaptotal_mb > 0
+
+- name: remove swap from fstab
+  lineinfile:
+    path: '/etc/fstab'
+    regexp: '\sswap\s'
+    state: 'absent'

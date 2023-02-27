@@ -1,0 +1,32 @@
+---
+- hosts: proxmox.home.apigban.com
+  become: true
+
+  pre_tasks:
+    - wait_for_connection: {timeout: 5}
+    - setup:
+
+  tasks:
+    - name: create k3s VMs
+      ansible.builtin.include_tasks:
+        file: tasks/vms/create_vms.yaml
+
+- hosts: k3s
+  become: true
+  vars:
+    ansible_user: "{{hostvars[groups['k3s'][0]]['k3s_user']}}"
+
+  pre_tasks:
+    - wait_for_connection: {timeout: 5}
+    - setup:
+
+  tasks:
+  - name: prepare VMs
+    ansible.builtin.include_tasks:
+      file: tasks/package_install.yaml
+  - name: prepare VMs
+    ansible.builtin.include_tasks:
+      file: tasks/k3s/pre-tasks.yaml
+  - name: install docker
+    ansible.builtin.include_role:
+      name: geerlingguy.docker

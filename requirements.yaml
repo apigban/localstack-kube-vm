@@ -1,0 +1,6 @@
+roles:
+- name: geerlingguy.ntp
+- name: lae.proxmox
+- name: geerlingguy.postgresql
+- name: geerlingguy.docker
+- name: freehck.disable_swap

@@ -1,0 +1,12 @@
+ansible/
+collections/
+galaxy_cache/
+galaxy_token
+roles/
+inventory/inventory.yaml
+inventory/group_vars/all.yaml
+inventory/group_vars/hypervisor.yaml
+key/
+README.md
+inventory/proxmox.json
+tmp/
